@@ -8,7 +8,7 @@
 <style>
     body {
         font-family: "Poppins", sans-serif;
-        background: linear-gradient(135deg, white, white);
+        background: #f4f7f9;
         margin: 0;
         padding: 20px;
     }
@@ -16,9 +16,10 @@
     .container {
         max-width: 480px;
         margin: auto;
-        background: transparent;
-        padding: 50px;
-        border-radius: 35px;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         animation: fadeIn 0.7s ease;
     }
 
@@ -38,23 +39,31 @@
         font-weight: 600;
         display: block;
         margin: 10px 0 5px;
-        color: blue;
+        color: #333;
     }
 
     input {
         width: 100%;
         padding: 12px;
-        border-radius: 25px;
-        border: 1px solid blue;
+        border-radius: 10px;
+        border: 2px solid #ddd;
         margin-bottom: 12px;
         font-size: 16px;
+        box-sizing: border-box;
         transition: 0.3s;
     }
 
     input:focus {
         border-color: #0057d9;
         outline: none;
-        box-shadow: 0 0 5px #0057d950;
+    }
+
+    .suggest-info {
+        font-size: 12px;
+        color: #0057d9;
+        margin-top: -10px;
+        margin-bottom: 10px;
+        font-weight: bold;
     }
 
     button {
@@ -66,21 +75,20 @@
         font-size: 18px;
         cursor: pointer;
         border-radius: 10px;
-        transition: 0.3s;
         font-weight: 600;
+        transition: 0.3s;
     }
 
-    button:hover {
-        background: #0041a8;
-        transform: scale(1.03);
+    button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
     }
 
-    /* Popup */
     .popup {
         position: fixed;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        background: #0007;
+        background: rgba(0,0,0,0.5);
         display: none;
         justify-content: center;
         align-items: center;
@@ -94,81 +102,50 @@
         text-align: center;
         width: 80%;
         max-width: 330px;
-        box-shadow: 0 5px 25px #0005;
-    }
-
-    .popup h3 {
-        font-size: 22px;
-        margin-bottom: 12px;
-    }
-
-    .close-btn {
-        background: #0057d9;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 10px;
     }
 
     .error {
-        color: red;
-        margin-bottom: -5px;
-        font-size: 14px;
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 13px;
         font-weight: 600;
         display: none;
+        text-align: center;
+        margin-bottom: 15px;
+        border: 1px solid #ffcdd2;
     }
 </style>
-
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-<script>
-    google.charts.load('current', {'packages':['corechart']});
-
-    function checkWorkerID(workerID) {
-        return new Promise((resolve) => {
-            let query = new google.visualization.Query(
-                "https://docs.google.com/spreadsheets/d/1fyNmCyGUWTCu2XQ3MQuqcSOcvjTt3t-nohbb86Y3DfM/gviz/tq?gid=0&tqx=out:json"
-            );
-
-            query.setQuery("select B where B = '" + workerID + "'");
-            query.send(response => {
-                if (response.isError()) resolve(false);
-                let data = response.getDataTable();
-                resolve(data.getNumberOfRows() > 0);
-            });
-        });
-    }
-</script>
 </head>
 
 <body>
 <div class="container">
     <h2>Worker Registration</h2>
 
-    <p class="error" id="errorText">❌ This Worker ID already exists. Please enter a new one.</p>
+    <div class="error" id="errorText">❌ This Worker ID already exists!</div>
 
     <form id="workerForm" method="POST"
           action="https://docs.google.com/forms/d/e/1FAIpQLSd6PA9r2XUxwUTm5ijK2pbM3ZNLuf-LYbnNdprPljXbycyflg/formResponse"
           target="hidden_iframe">
 
         <label>Worker ID</label>
-        <input type="text" id="workerID" name="entry.403652441" required />
+        <input type="number" id="workerID" name="entry.403652441" placeholder="Checking database..." required />
+        <div id="suggestLabel" class="suggest-info">🔄 Connecting to database...</div>
 
         <label>Worker Name</label>
-        <input type="text" name="entry.1265503899" required />
+        <input type="text" name="entry.1265503899" placeholder="Enter full name" required />
 
         <label>Designation</label>
-        <input type="text" name="entry.1271138675" required />
+        <input type="text" name="entry.1271138675" placeholder="Ex: Mason, Helper" required />
 
         <label>Day Salary (Official)</label>
-        <input type="number" name="entry.16864712" required />
+        <input type="number" name="entry.16864712" placeholder="Amount in TK" required />
 
         <label>Day Salary (Rate)</label>
-        <input type="number" name="entry.707658343" required />
+        <input type="number" name="entry.707658343" placeholder="Amount in TK" required />
 
-        <button type="submit">Submit</button>
+        <button type="submit" id="submitBtn">Submit Registration</button>
     </form>
 
     <iframe name="hidden_iframe" style="display:none;"></iframe>
@@ -176,47 +153,98 @@
 
 <div class="popup" id="popupSuccess">
     <div class="popup-box">
-        <h3>✔ Submitted Successfully!</h3>
-        <p>Worker data has been recorded.</p>
-        <button class="close-btn" id="popupOk">OK</button>
+        <h3 style="color: #2e7d32;">✔ Submitted Successfully!</h3>
+        <p>Worker data has been safely recorded.</p>
+        <button onclick="location.reload()" style="background:#0057d9; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer;">Add Another</button>
     </div>
 </div>
 
 <script>
+    // আপনার ডাটাবেস (CSV) লিঙ্ক
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vScKUqfoXQNBZy7kPYd6bYpHV8_KsOMTDAA-Rx9PI03rZRUkoRHIz25htZDEuyhf8SerewYetdOgJai/pub?gid=544154648&single=true&output=csv";
+    
+    let existingIDs = [];
     let formSubmitted = false;
+
+    const workerIDInput = document.getElementById("workerID");
+    const errorText = document.getElementById("errorText");
+    const submitBtn = document.getElementById("submitBtn");
+    const suggestLabel = document.getElementById('suggestLabel');
+
+    // ডাটাবেস থেকে আইডি ফেচ এবং অটো-সাজেশন ফাংশন
+    async function fetchDatabase() {
+        try {
+            const response = await fetch(csvUrl);
+            const data = await response.text();
+            const rows = data.split('\n').slice(1);
+            
+            let maxID = 0;
+            existingIDs = [];
+
+            rows.forEach(row => {
+                const cols = row.split(',');
+                // Column B (Index 1) থেকে আইডি সংগ্রহ
+                const idValue = cols[1] ? cols[1].trim() : "";
+                const id = parseInt(idValue);
+                if (!isNaN(id)) {
+                    existingIDs.push(id);
+                    if (id > maxID) maxID = id;
+                }
+            });
+
+            const nextID = maxID + 1;
+            workerIDInput.value = nextID; // সাজেস্ট করা আইডি ইনপুট বক্সে বসানো
+            suggestLabel.innerText = "✅ Recommended Next ID: " + nextID;
+            workerIDInput.placeholder = "Enter Worker ID";
+
+        } catch (error) {
+            console.error("Error fetching IDs:", error);
+            suggestLabel.innerText = "⚠️ Offline: Could not suggest ID.";
+        }
+    }
+
+    // রিয়েল-টাইম ডুপ্লিকেট চেক (টাইপ করার সাথে সাথে)
+    workerIDInput.addEventListener("input", function() {
+        let inputVal = parseInt(this.value);
+        
+        if (existingIDs.includes(inputVal)) {
+            errorText.style.display = "block";
+            errorText.innerHTML = "❌ ID <b>" + inputVal + "</b> is already in use!";
+            this.style.borderColor = "#d32f2f";
+            submitBtn.disabled = true;
+        } else {
+            errorText.style.display = "none";
+            this.style.borderColor = "#0057d9";
+            submitBtn.disabled = false;
+        }
+        
+        if(this.value === "") {
+            errorText.style.display = "none";
+            submitBtn.disabled = false;
+            this.style.borderColor = "#ddd";
+        }
+    });
+
+    // পেজ লোড হলে ডাটাবেস কানেক্ট হবে
+    window.onload = fetchDatabase;
 
     const form = document.getElementById("workerForm");
     const popup = document.getElementById("popupSuccess");
-    const popupOk = document.getElementById("popupOk");
     const iframe = document.querySelector('iframe[name="hidden_iframe"]');
-    const errorText = document.getElementById("errorText");
 
-    form.addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        let workerID = document.getElementById("workerID").value.trim();
-        errorText.style.display = "none";
-
-        let exists = await checkWorkerID(workerID);
-        if (exists) {
-            errorText.style.display = "block";
-            return;
+    form.addEventListener("submit", function (e) {
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return false;
         }
-
         formSubmitted = true;
-        form.submit();
     });
 
     iframe.addEventListener("load", function () {
         if (formSubmitted) {
             popup.style.display = "flex";
-            form.reset();
             formSubmitted = false;
         }
-    });
-
-    popupOk.addEventListener("click", function(){
-        popup.style.display = "none";
     });
 </script>
 
